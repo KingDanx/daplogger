@@ -9,9 +9,9 @@ import (
 )
 
 type Logger struct {
-	path         string
-	logName      string
-	logFileCount int
+	Path         string
+	LogName      string
+	LogFileCount int
 }
 
 func (l Logger) Log(message string, messageType string) {
@@ -53,15 +53,15 @@ func (l Logger) LogWarning(message string) {
 func (l Logger) createLogFile() (string, error) {
 
 	//? Check if directory does not exist
-	_, dirErr := os.Stat(l.path)
+	_, dirErr := os.Stat(l.Path)
 	if os.IsNotExist(dirErr) {
 		//? Directory does not exist
-		os.MkdirAll(l.path, os.ModePerm)
+		os.MkdirAll(l.Path, os.ModePerm)
 	}
 
-	formatLogName := fmt.Sprintf("%d_%d_%d-%s.log", time.Now().Year(), time.Now().Month(), time.Now().Day(), l.logName)
+	formatLogName := fmt.Sprintf("%d_%d_%d-%s.log", time.Now().Year(), time.Now().Month(), time.Now().Day(), l.LogName)
 
-	fullPath := filepath.Join(l.path, formatLogName)
+	fullPath := filepath.Join(l.Path, formatLogName)
 
 	//? Check if file does not exist
 	_, fileErr := os.Stat(fullPath)
