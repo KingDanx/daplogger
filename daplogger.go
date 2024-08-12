@@ -73,5 +73,32 @@ func (l Logger) createLogFile() (string, error) {
 		}
 		defer file.Close()
 	}
+
+	formatLatestLogName := fmt.Sprintf("latest-%s.log", l.LogName)
+
+	fullPathLatest := filepath.Join(l.Path, formatLatestLogName)
+
+	latestFile, fileErrLatest := os.Stat(fullPathLatest)
+	if os.IsNotExist(fileErrLatest) {
+		//? Create the file in the directory
+		file, err := os.OpenFile(fullPathLatest, os.O_CREATE|os.O_RDWR, os.ModePerm)
+		if err != nil {
+			return "", err
+		}
+		defer file.Close()
+	}
+
+	if latestFile.Size() > 50*1024*1024 {
+		removeErr := os.Remove(fullPathLatest)
+		if removeErr != nil {
+			fmt.Println("Failed to delete file")
+		}
+		file, err := os.OpenFile(fullPathLatest, os.O_CREATE|os.O_RDWR, os.ModePerm)
+		if err != nil {
+			return "", err
+		}
+		defer file.Close()
+	}
+
 	return fullPath, nil
 }
