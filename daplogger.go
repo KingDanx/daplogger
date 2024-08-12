@@ -20,7 +20,7 @@ type LogFiles struct {
 	Latest     string
 }
 
-func (l Logger) Log(message string, messageType string) {
+func (l *Logger) Log(message string, messageType string) {
 	logFiles, err := l.createLogFile()
 	if err != nil {
 		fmt.Println("Failed to get the log file")
@@ -103,9 +103,7 @@ func (l *Logger) createLogFile() (LogFiles, error) {
 			return LogFiles{}, err
 		}
 		defer file.Close()
-	}
-
-	if latestFile.Size() > 50*1024*1024 {
+	} else if latestFile.Size() > 50*1024*1024 {
 		removeErr := os.Remove(fullPathLatest)
 		if removeErr != nil {
 			fmt.Println("Failed to delete file")

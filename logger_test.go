@@ -12,7 +12,7 @@ func TestLog(t *testing.T) {
 
 	logger := daplogger.Logger{
 		Path:         logDir,
-		LogName:      "PentaTransitHub",
+		LogName:      "test",
 		LogFileCount: 30,
 	}
 
