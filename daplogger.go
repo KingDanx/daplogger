@@ -12,19 +12,31 @@ type Logger struct {
 	Path         string
 	LogName      string
 	LogFileCount int
+	LogFiles     LogFiles
+}
+
+type LogFiles struct {
+	CurrentDay string
+	Latest     string
 }
 
 func (l Logger) Log(message string, messageType string) {
-	logFilePath, err := l.createLogFile()
+	logFiles, err := l.createLogFile()
 	if err != nil {
 		fmt.Println("Failed to get the log file")
 	}
 
-	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	logFile, err := os.OpenFile(logFiles.CurrentDay, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		fmt.Println("Failed to open the log file")
 	}
 	defer logFile.Close()
+
+	latestFile, err := os.OpenFile(logFiles.Latest, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		fmt.Println("Failed to open the log file")
+	}
+	defer latestFile.Close()
 
 	now := time.Now()
 	mins := fmt.Sprintf("%02d", now.Minute())
@@ -34,6 +46,11 @@ func (l Logger) Log(message string, messageType string) {
 
 	_, writeErr := logFile.WriteString(formatedMessage)
 	if writeErr != nil {
+		fmt.Println("Failed to write to the log file")
+	}
+
+	_, latestWriteErr := latestFile.WriteString(formatedMessage)
+	if latestWriteErr != nil {
 		fmt.Println("Failed to write to the log file")
 	}
 }
@@ -50,7 +67,7 @@ func (l Logger) LogWarning(message string) {
 	l.Log(message, "warning")
 }
 
-func (l Logger) createLogFile() (string, error) {
+func (l *Logger) createLogFile() (LogFiles, error) {
 
 	//? Check if directory does not exist
 	_, dirErr := os.Stat(l.Path)
@@ -69,7 +86,7 @@ func (l Logger) createLogFile() (string, error) {
 		//? Create the file in the directory
 		file, err := os.OpenFile(fullPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
 		if err != nil {
-			return "", err
+			return LogFiles{}, err
 		}
 		defer file.Close()
 	}
@@ -83,7 +100,7 @@ func (l Logger) createLogFile() (string, error) {
 		//? Create the file in the directory
 		file, err := os.OpenFile(fullPathLatest, os.O_CREATE|os.O_RDWR, os.ModePerm)
 		if err != nil {
-			return "", err
+			return LogFiles{}, err
 		}
 		defer file.Close()
 	}
@@ -95,10 +112,17 @@ func (l Logger) createLogFile() (string, error) {
 		}
 		file, err := os.OpenFile(fullPathLatest, os.O_CREATE|os.O_RDWR, os.ModePerm)
 		if err != nil {
-			return "", err
+			return LogFiles{}, err
 		}
 		defer file.Close()
 	}
 
-	return fullPath, nil
+	logFiles := LogFiles{
+		CurrentDay: fullPath,
+		Latest:     fullPathLatest,
+	}
+
+	l.LogFiles = logFiles
+
+	return logFiles, nil
 }
