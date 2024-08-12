@@ -168,8 +168,6 @@ func (l *Logger) cleanLogs() {
 				err := os.Remove(path.Join(l.Path, file.file.Name()))
 				if err != nil {
 					fmt.Println("Error deleting: ", file.file.Name())
-				} else {
-					fmt.Println("we good")
 				}
 			}
 		}
@@ -183,8 +181,6 @@ func (l *Logger) cleanLogs() {
 
 		duration := time.Until(next)
 		fmt.Printf("Sleeping for %v until next trigger at %v\n", duration, next)
-
-		fmt.Println(files)
 
 		time.Sleep(duration)
 
