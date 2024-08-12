@@ -3,7 +3,9 @@ package daplogger
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -18,6 +20,11 @@ type Logger struct {
 type LogFiles struct {
 	CurrentDay string
 	Latest     string
+}
+
+type DAPFile struct {
+	file os.FileInfo
+	epoc int64
 }
 
 func (l *Logger) Log(message string, messageType string) {
@@ -103,7 +110,7 @@ func (l *Logger) createLogFile() (LogFiles, error) {
 			return LogFiles{}, err
 		}
 		defer file.Close()
-	} else if latestFile.Size() > 50*1024*1024 {
+	} else if latestFile.Size() > 50*1024*1024 { //? if the file is over 50mb we will delete it and make a new file
 		removeErr := os.Remove(fullPathLatest)
 		if removeErr != nil {
 			fmt.Println("Failed to delete file")
@@ -123,4 +130,78 @@ func (l *Logger) createLogFile() (LogFiles, error) {
 	l.LogFiles = logFiles
 
 	return logFiles, nil
+}
+
+func (l *Logger) cleanLogs() {
+	hour, min, sec, nsec := 0, 0, 0, 50
+	for {
+		files := []DAPFile{}
+		err := filepath.Walk(l.Path, func(path string, file os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !file.IsDir() && !strings.Contains(file.Name(), "latest") {
+				modTime := file.ModTime()
+				epoc := modTime.Unix()
+
+				dapFile := DAPFile{
+					file: file,
+					epoc: epoc,
+				}
+
+				files = append(files, dapFile)
+			}
+
+			return nil
+		})
+
+		if len(files) > l.LogFileCount {
+			sort.Slice(files, func(i, j int) bool {
+				return files[i].epoc > files[j].epoc
+			})
+
+			filesToDelete := files[l.LogFileCount:]
+
+			for _, file := range filesToDelete {
+				fmt.Println("I must delete this file: ", file.file.Name())
+				err := os.Remove(path.Join(l.Path, file.file.Name()))
+				if err != nil {
+					fmt.Println("Error deleting: ", file.file.Name())
+				} else {
+					fmt.Println("we good")
+				}
+			}
+		}
+
+		now := time.Now()
+		next := time.Date(now.Year(), now.Month(), now.Day(), hour, min, sec, nsec, now.Location())
+
+		if now.After(next) {
+			next = next.Add(24 * time.Hour)
+		}
+
+		duration := time.Until(next)
+		fmt.Printf("Sleeping for %v until next trigger at %v\n", duration, next)
+
+		fmt.Println(files)
+
+		time.Sleep(duration)
+
+		if err != nil {
+			panic(fmt.Sprintf("Error walking the path %q: %v\n", l.Path, err))
+		}
+	}
+}
+
+func CreateLogger(path, logName string, logCount int) Logger {
+	logger := Logger{
+		Path:         path,
+		LogName:      logName,
+		LogFileCount: logCount,
+	}
+
+	go logger.cleanLogs()
+
+	return logger
 }
