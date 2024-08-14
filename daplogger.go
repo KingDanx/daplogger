@@ -49,7 +49,7 @@ func (l *Logger) Log(message string, messageType string) {
 	mins := fmt.Sprintf("%02d", now.Minute())
 	secs := fmt.Sprintf("%02d", now.Second())
 
-	formatedMessage := fmt.Sprintf("%d:%v:%v - [%s] - %s\r\n", now.Hour(), mins, secs, strings.ToUpper(messageType), message)
+	formatedMessage := fmt.Sprintf("[%s] %d-%d-%d - %d:%v:%v - %s\r\n", strings.ToUpper(messageType), now.Month(), now.Day(), now.Year(), now.Hour(), mins, secs, message)
 
 	_, writeErr := logFile.WriteString(formatedMessage)
 	if writeErr != nil {
